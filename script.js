@@ -32,11 +32,49 @@
             ]
         };
 
+    // --- Persistence Logic ---
+    function saveState() {
+        const stateToSave = {
+            role: state.role,
+            darkMode: state.darkMode,
+            powerSaving: state.powerSaving,
+            medicalData: state.medicalData
+        };
+        localStorage.setItem('lifeNodeState', JSON.stringify(stateToSave));
+    }
+
+    function loadState() {
+        try {
+            const saved = localStorage.getItem('lifeNodeState');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed.role !== undefined) state.role = parsed.role;
+                if (parsed.darkMode !== undefined) state.darkMode = parsed.darkMode;
+                if (parsed.powerSaving !== undefined) state.powerSaving = parsed.powerSaving;
+                if (parsed.medicalData) state.medicalData = { ...state.medicalData, ...parsed.medicalData };
+            }
+        } catch (e) { console.error("Failed to load state", e); }
+    }
+
         // --- Core Functions ---
 
         function init() {
-            renderLanding(); // Start with Role Selection
+            loadState();
+            if (state.role) {
+                finalizeRoleSelection(state.role);
+            } else {
+                renderLanding();
+            }
+            setInterval(updateClock, 1000);
             if (window.lucide) lucide.createIcons();
+        }
+
+        function updateClock() {
+            const timeEls = document.querySelectorAll('.status-time');
+            if (timeEls.length) {
+                const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                timeEls.forEach(el => el.innerText = timeStr);
+            }
         }
 
         // --- Role Selection (Landing Page) ---
@@ -133,6 +171,7 @@
 
         function finalizeRoleSelection(role) {
             state.role = role;
+            saveState();
             state.activeTab = 'sos'; 
             
             // Show Nav
@@ -163,6 +202,7 @@
         function handleRightNav() {
             if (state.role === 'government') {
                 state.role = null;
+                saveState();
                 renderLanding();
             } else {
                 toggleMedical(true);
@@ -183,7 +223,7 @@
             return `
             <header class="${bgClass} text-white px-6 py-3 flex justify-between items-center text-xs select-none z-10 transition-colors duration-500">
                 <div class="flex items-center gap-2">
-                    <span class="font-bold">9:41</span>
+                    <span class="font-bold status-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                     ${state.powerSaving ? '<i data-lucide="zap" class="w-3 h-3 text-yellow-400"></i>' : ''}
                 </div>
                 <div class="flex items-center gap-2">
@@ -821,16 +861,19 @@
             state.medicalData.allergies = document.getElementById('input-allergies').value;
             state.medicalData.condition = document.getElementById('input-condition').value;
             toggleMedical(false);
+            saveState();
             if(state.activeTab === 'sos' && state.role === 'resident') renderScreen();
         }
 
         function togglePowerSaving() {
             state.powerSaving = !state.powerSaving;
+            saveState();
             renderScreen();
         }
 
         function toggleDarkMode() {
             state.darkMode = !state.darkMode;
+            saveState();
             renderScreen();
         }
 
