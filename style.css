@@ -73,6 +73,32 @@
         .animate-fill-up {
             animation: fill-up 3s linear forwards;
         }
+
+        /* Dynamic Island Animation */
+        @keyframes islandExpand {
+            0% { transform: translateX(-50%) scale(0.3); opacity: 0; }
+            60% { transform: translateX(-50%) scale(1.05); opacity: 1; }
+            100% { transform: translateX(-50%) scale(1); opacity: 1; }
+        }
+        .animate-island {
+            animation: islandExpand 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+        }
+
+        /* Interactive Chart Animations */
+        @keyframes growUp {
+            from { transform: scaleY(0); }
+            to { transform: scaleY(1); }
+        }
+        .animate-grow-up {
+            animation: growUp 1.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+            transform-origin: bottom;
+        }
+        @keyframes fillWidth {
+            from { width: 0%; }
+        }
+        .animate-fill-width {
+            animation: fillWidth 1.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
         
         /* Utility to ensure scale-0 works if tailwind strips it */
         .scale-0 { transform: scale(0); }

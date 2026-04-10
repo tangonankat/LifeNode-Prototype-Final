@@ -5,6 +5,7 @@
             darkMode: true,
             activeTab: 'sos', // 'sos' (or 'monitor' for gov), 'chat', 'map', 'settings'
             sosActive: false,
+            govView: 'dashboard', // 'dashboard', 'records', 'resources', 'analytics'
             sosStage: 0, // 0: Idle, 1: Sending, 2: Sent
             isHolding: false, // For SOS Hold Interaction
             sosHoldTimer: null, // Timer reference for hold
@@ -186,8 +187,8 @@
 
             if (role === 'government') {
                 centerIcon.setAttribute('data-lucide', 'activity'); // Monitor icon
-                rightIcon.setAttribute('data-lucide', 'log-out');
-                rightText.innerText = 'EXIT';
+                rightIcon.setAttribute('data-lucide', 'megaphone'); // Alert icon
+                rightText.innerText = 'ALERT';
             } else {
                 centerIcon.setAttribute('data-lucide', 'shield-alert'); // SOS icon
                 rightIcon.setAttribute('data-lucide', 'user');
@@ -201,7 +202,7 @@
 
         function handleRightNav() {
             if (state.role === 'government') {
-                exitApp();
+                toggleBroadcastModal(true); // Open Broadcast Modal
             } else {
                 toggleMedical(true);
             }
@@ -310,13 +311,19 @@
             const textColor = isDark ? 'text-slate-200' : 'text-slate-800';
 
             return `
-            <section class="flex-1 flex flex-col items-center justify-center p-6 relative overflow-hidden ${bgClass} transition-colors duration-500 animate-fade-in">
+            <section class="flex-1 flex flex-col items-center justify-center p-6 relative overflow-hidden ${bgClass} transition-colors duration-500">
                 
                 ${state.sosActive && state.sosStage === 1 ? `
                 <div class="absolute inset-0 flex items-center justify-center z-0 pointer-events-none">
                     <div class="w-64 h-64 bg-red-600/20 rounded-full animate-ping-slow absolute"></div>
                     <div class="w-48 h-48 bg-red-600/30 rounded-full animate-ping absolute delay-75"></div>
                 </div>` : ''}
+
+                <div class="absolute top-4 right-4 z-20">
+                    <button onclick="exitApp()" class="text-[10px] bg-slate-500/10 hover:bg-slate-500/20 border border-slate-500/20 ${isDark ? 'text-slate-400' : 'text-slate-600'} px-2 py-1 rounded flex items-center gap-1 font-bold transition-all active:scale-95">
+                        <i data-lucide="log-out" class="w-3 h-3"></i> EXIT
+                    </button>
+                </div>
 
                 <div class="z-10 w-full max-w-xs flex flex-col items-center gap-6">
                     <div class="text-center space-y-2 mt-4">
@@ -377,12 +384,199 @@
 
         // --- Government Screen Renders ---
 
+        function setGovView(view) {
+            state.govView = view;
+            renderScreen();
+        }
+
+        function renderGovRecords(isDark, cardBg, textColor) {
+            const resolved = state.incidents.filter(i => i.status === 'Resolved');
+            const listHTML = resolved.map(inc => `
+                <article onclick="openIncidentDetails(${inc.id})" class="${cardBg} border p-3 rounded-xl flex items-center justify-between shadow-sm cursor-pointer hover:opacity-80 transition-all">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 rounded-full ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-500'}">
+                            <i data-lucide="archive" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold ${textColor}">${inc.user} <span class="text-[10px] text-slate-500 font-normal">#${inc.id}</span></h3>
+                            <p class="text-[10px] text-slate-400 mt-0.5 uppercase tracking-wider">${inc.type} • ${inc.time}</p>
+                        </div>
+                    </div>
+                    <div class="text-[9px] font-bold text-green-500 bg-green-500/10 border border-green-500/20 px-2 py-1 rounded uppercase">Resolved</div>
+                </article>
+            `).join('');
+
+            return `
+            <div class="flex flex-col h-full overflow-hidden">
+                <header class="flex items-center gap-3 mb-4 shrink-0">
+                    <button onclick="setGovView('dashboard')" class="p-2 ${cardBg} border rounded-full text-slate-400 hover:text-white transition-all active:scale-90 shadow-sm">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                    </button>
+                    <div>
+                        <h2 class="text-lg font-bold ${textColor} tracking-tight">Incident Records</h2>
+                        <p class="text-[10px] text-slate-400 uppercase tracking-wider">Historical Archive</p>
+                    </div>
+                </header>
+                <div class="mb-4 shrink-0">
+                    <div class="relative">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+                        <input type="text" placeholder="Search by name or ID..." class="${cardBg} border text-xs py-3 pl-9 pr-3 rounded-xl focus:border-blue-500 w-full ${textColor} outline-none transition-colors">
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto space-y-3 no-scrollbar pb-4">
+                    ${listHTML || `<div class="text-center py-8 text-slate-500 text-xs italic">No records found.</div>`}
+                </div>
+            </div>`;
+        }
+
+        function renderGovResources(isDark, cardBg, textColor) {
+            return `
+            <div class="flex flex-col h-full overflow-hidden">
+                <header class="flex items-center gap-3 mb-4 shrink-0">
+                    <button onclick="setGovView('dashboard')" class="p-2 ${cardBg} border rounded-full text-slate-400 hover:text-white transition-all active:scale-90 shadow-sm">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                    </button>
+                    <div>
+                        <h2 class="text-lg font-bold ${textColor} tracking-tight">Resource Manager</h2>
+                        <p class="text-[10px] text-slate-400 uppercase tracking-wider">Active Units & Shelters</p>
+                    </div>
+                </header>
+                <div class="flex-1 overflow-y-auto space-y-5 no-scrollbar pb-4">
+                    <div>
+                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'} pb-1">Rescue Units (12 Active)</h3>
+                        <div class="space-y-2">
+                            <div class="${cardBg} border p-3 rounded-xl flex justify-between items-center shadow-sm">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 bg-blue-500/10 border border-blue-500/20 text-blue-500 rounded-full"><i data-lucide="truck" class="w-4 h-4"></i></div>
+                                    <div>
+                                        <div class="text-sm font-bold ${textColor}">Unit Alpha-1</div>
+                                        <div class="text-[10px] text-slate-400">En route to Brgy San Jose</div>
+                                    </div>
+                                </div>
+                                <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                            </div>
+                            <div class="${cardBg} border p-3 rounded-xl flex justify-between items-center shadow-sm">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 bg-blue-500/10 border border-blue-500/20 text-blue-500 rounded-full"><i data-lucide="truck" class="w-4 h-4"></i></div>
+                                    <div>
+                                        <div class="text-sm font-bold ${textColor}">Unit Bravo-4</div>
+                                        <div class="text-[10px] text-slate-400">Standby at Evac Center 2</div>
+                                    </div>
+                                </div>
+                                <span class="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.6)]"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'} pb-1">Shelters (3/4 Open)</h3>
+                        <div class="space-y-2">
+                            <div class="${cardBg} border p-3 rounded-xl flex justify-between items-center shadow-sm">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 bg-green-500/10 border border-green-500/20 text-green-500 rounded-full"><i data-lucide="tent" class="w-4 h-4"></i></div>
+                                    <div>
+                                        <div class="text-sm font-bold ${textColor}">City Hall Evac</div>
+                                        <div class="text-[10px] text-slate-400">Capacity: 450 / 500</div>
+                                    </div>
+                                </div>
+                                <div class="text-xs font-bold text-green-500 bg-green-500/10 px-2 py-0.5 rounded">90%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function renderGovAnalytics(isDark, cardBg, textColor) {
+            const chartData = [
+                { time: '00:00', val: 30, alerts: 12 },
+                { time: '04:00', val: 50, alerts: 25 },
+                { time: '08:00', val: 80, alerts: 48 },
+                { time: '12:00', val: 100, alerts: 64 },
+                { time: '16:00', val: 60, alerts: 32 },
+                { time: '20:00', val: 40, alerts: 18 }
+            ];
+
+            const chartBars = chartData.map((d, i) => `
+                <div class="flex-1 bg-red-500/10 rounded-t-sm relative group cursor-pointer transition-colors hover:bg-red-500/20" style="height: ${d.val}%">
+                    <div class="absolute inset-x-0 bottom-0 bg-red-500/80 group-hover:bg-red-500 rounded-t-sm h-full animate-grow-up transition-colors" style="animation-delay: ${i * 150}ms;"></div>
+                    <div class="absolute -top-7 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-[9px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 border border-slate-700 shadow-lg">
+                        ${d.alerts} Alerts
+                    </div>
+                </div>
+            `).join('');
+            const chartLabels = chartData.map(d => `<span>${d.time}</span>`).join('');
+
+            return `
+            <div class="flex flex-col h-full overflow-hidden">
+                <header class="flex items-center gap-3 mb-4 shrink-0">
+                    <button onclick="setGovView('dashboard')" class="p-2 ${cardBg} border rounded-full text-slate-400 hover:text-white transition-all active:scale-90 shadow-sm">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                    </button>
+                    <div>
+                        <h2 class="text-lg font-bold ${textColor} tracking-tight">System Metrics</h2>
+                        <p class="text-[10px] text-slate-400 uppercase tracking-wider">Mesh Health & Stats</p>
+                    </div>
+                </header>
+                <div class="flex-1 overflow-y-auto space-y-4 no-scrollbar pb-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="${cardBg} border p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-sm">
+                            <div class="text-2xl font-bold text-green-400 mb-1">98%</div>
+                            <div class="text-[9px] text-slate-400 uppercase tracking-widest font-bold">Mesh Uptime</div>
+                        </div>
+                        <div class="${cardBg} border p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-sm">
+                            <div class="text-2xl font-bold text-blue-400 mb-1">1.2k</div>
+                            <div class="text-[9px] text-slate-400 uppercase tracking-widest font-bold">Nodes Active</div>
+                        </div>
+                    </div>
+                    
+                    <div class="${cardBg} border p-4 rounded-xl shadow-sm">
+                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Incident Trends (24h)</h3>
+                        <div class="flex items-end gap-2 h-24 mb-2">
+                            ${chartBars}
+                        </div>
+                        <div class="flex justify-between text-[8px] text-slate-500 font-mono">
+                            ${chartLabels}
+                        </div>
+                    </div>
+                    
+                    <div class="${cardBg} border p-4 rounded-xl shadow-sm">
+                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Critical Resource Needs</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-slate-400 font-bold">Medical Evac</span>
+                                    <span class="text-red-400 font-bold">Critical</span>
+                                </div>
+                                <div class="w-full bg-slate-800/50 rounded-full h-1.5 overflow-hidden"><div class="bg-red-500 h-1.5 rounded-full animate-fill-width" style="width: 85%; animation-delay: 400ms;"></div></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-slate-400 font-bold">Food & Water</span>
+                                    <span class="text-yellow-400 font-bold">Medium</span>
+                                </div>
+                                <div class="w-full bg-slate-800/50 rounded-full h-1.5 overflow-hidden"><div class="bg-yellow-500 h-1.5 rounded-full animate-fill-width" style="width: 45%; animation-delay: 700ms;"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
         function renderGovDashboard() {
             const isDark = state.darkMode;
             const bgClass = state.powerSaving ? 'bg-black' : (isDark ? 'bg-slate-900' : 'bg-slate-50');
             const cardBg = isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200 shadow-sm';
             const textColor = isDark ? 'text-white' : 'text-slate-900';
             
+            let innerHTML = '';
+
+            if (state.govView === 'records') {
+                innerHTML = renderGovRecords(isDark, cardBg, textColor);
+            } else if (state.govView === 'resources') {
+                innerHTML = renderGovResources(isDark, cardBg, textColor);
+            } else if (state.govView === 'analytics') {
+                innerHTML = renderGovAnalytics(isDark, cardBg, textColor);
+            } else {
             const filteredIncidents = state.incidents.filter(inc => {
                 if (state.govFilter === 'All') return true;
                 return inc.status === state.govFilter;
@@ -393,7 +587,7 @@
                 const icon = inc.type === 'SOS' ? 'shield-alert' : inc.type === 'Flood' ? 'cloud-rain' : 'file-heart';
                 
                 return `
-                <article onclick="openIncidentDetails(${inc.id})" class="${cardBg} border p-3 rounded-xl flex items-center justify-between cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm animate-slide-up-fade" style="animation-delay: ${idx * 60}ms; opacity: 0;">
+                <article onclick="openIncidentDetails(${inc.id})" class="${cardBg} border p-3 rounded-xl flex items-center justify-between cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm">
                     <div class="flex items-center gap-3">
                         <div class="p-2 rounded-full ${isDark ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-600'}">
                             <i data-lucide="${icon}" class="w-5 h-5"></i>
@@ -418,47 +612,75 @@
 
             const filterBtnClass = (f) => state.govFilter === f ? (isDark ? 'bg-slate-600 text-white' : 'bg-slate-200 text-slate-800') : 'text-slate-500 hover:opacity-70';
 
-            return `
-            <section class="flex-1 flex flex-col p-4 ${bgClass} transition-colors duration-500 animate-fade-in overflow-hidden">
-                <header class="flex justify-between items-end mb-4">
+                innerHTML = `
+                <div class="flex flex-col h-full overflow-hidden">
+                <header class="flex justify-between items-start mb-4 shrink-0">
                     <div>
                         <h2 class="text-xl font-bold ${textColor} tracking-tight">Command Center</h2>
-                        <p class="text-xs text-slate-400">Monitoring Sector 4</p>
+                        <p class="text-xs text-slate-400 mb-2">Monitoring Sector 4</p>
+                        <button onclick="exitApp()" class="text-[10px] bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 px-2 py-1 rounded flex items-center gap-1 font-bold transition-all active:scale-95 shadow-sm">
+                            <i data-lucide="log-out" class="w-3 h-3"></i> EXIT LGU
+                        </button>
                     </div>
                     <div class="text-right">
-                        <div class="text-2xl font-bold text-red-500">${state.incidents.filter(i => i.status === 'Active').length}</div>
-                        <div class="text-[10px] text-slate-500 uppercase font-bold">Active Alerts</div>
+                        <div class="text-2xl font-bold text-red-500 leading-none mt-1">${state.incidents.filter(i => i.status === 'Active').length}</div>
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mt-1">Active Alerts</div>
                     </div>
                 </header>
 
-                <!-- Broadcast Button -->
-                <button onclick="toggleBroadcastModal(true)" class="w-full bg-red-600 hover:bg-red-500 text-white p-3 rounded-xl font-bold mb-4 flex items-center justify-center gap-2 shadow-lg shadow-red-900/20 transition-all active:scale-95">
-                    <i data-lucide="megaphone" class="w-4 h-4"></i>
-                    BROADCAST ALERT
-                </button>
-
-                <div class="flex gap-2 mb-4">
-                    <div class="flex-1 ${cardBg} border p-3 rounded-lg">
-                        <div class="text-xs text-slate-400 uppercase font-bold">Rescuers</div>
-                        <div class="text-lg font-mono ${textColor}">12</div>
+                <div class="flex-1 overflow-y-auto space-y-4 no-scrollbar pb-4">
+                    <!-- Quick Actions -->
+                    <div class="grid grid-cols-4 gap-2">
+                        <button onclick="toggleBroadcastModal(true)" class="flex flex-col items-center justify-center ${cardBg} border rounded-xl p-2 transition-all hover:bg-slate-700/50 active:scale-95 group shadow-sm">
+                            <div class="bg-red-500/10 p-2 rounded-full text-red-500 group-hover:bg-red-500 group-hover:text-white transition-colors mb-1"><i data-lucide="megaphone" class="w-4 h-4"></i></div>
+                            <span class="text-[9px] font-bold text-slate-400 group-hover:text-slate-300 uppercase">Alert</span>
+                        </button>
+                        <button onclick="setGovView('records')" class="flex flex-col items-center justify-center ${cardBg} border rounded-xl p-2 transition-all hover:bg-slate-700/50 active:scale-95 group shadow-sm">
+                            <div class="bg-blue-500/10 p-2 rounded-full text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors mb-1"><i data-lucide="archive" class="w-4 h-4"></i></div>
+                            <span class="text-[9px] font-bold text-slate-400 group-hover:text-slate-300 uppercase">Records</span>
+                        </button>
+                        <button onclick="setGovView('resources')" class="flex flex-col items-center justify-center ${cardBg} border rounded-xl p-2 transition-all hover:bg-slate-700/50 active:scale-95 group shadow-sm">
+                            <div class="bg-green-500/10 p-2 rounded-full text-green-500 group-hover:bg-green-500 group-hover:text-white transition-colors mb-1"><i data-lucide="truck" class="w-4 h-4"></i></div>
+                            <span class="text-[9px] font-bold text-slate-400 group-hover:text-slate-300 uppercase">Units</span>
+                        </button>
+                        <button onclick="setGovView('analytics')" class="flex flex-col items-center justify-center ${cardBg} border rounded-xl p-2 transition-all hover:bg-slate-700/50 active:scale-95 group shadow-sm">
+                            <div class="bg-purple-500/10 p-2 rounded-full text-purple-500 group-hover:bg-purple-500 group-hover:text-white transition-colors mb-1"><i data-lucide="activity" class="w-4 h-4"></i></div>
+                            <span class="text-[9px] font-bold text-slate-400 group-hover:text-slate-300 uppercase">Metrics</span>
+                        </button>
                     </div>
-                    <div class="flex-1 ${cardBg} border p-3 rounded-lg">
-                        <div class="text-xs text-slate-400 uppercase font-bold">Shelters</div>
-                        <div class="text-lg font-mono ${textColor}">3/4</div>
-                    </div>
-                </div>
 
-                <div class="flex-1 overflow-y-auto space-y-3 no-scrollbar pb-4">
-                    <nav class="sticky top-0 ${bgClass} py-2 z-10 flex justify-between items-center border-b ${isDark ? 'border-slate-800' : 'border-slate-200'} mb-2 transition-colors duration-500">
-                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest text-balance">Incoming Feed</h3>
-                        <div class="flex ${isDark ? 'bg-slate-800/50 border-slate-700/50' : 'bg-slate-100 border-slate-200'} p-0.5 rounded-lg border">
-                            <button onclick="setGovFilter('All')" class="px-3 py-1 text-[10px] font-bold rounded-md transition-all ${filterBtnClass('All')}">ALL</button>
-                            <button onclick="setGovFilter('Active')" class="px-3 py-1 text-[10px] font-bold rounded-md transition-all ${filterBtnClass('Active')}">ACTIVE</button>
-                            <button onclick="setGovFilter('Resolved')" class="px-3 py-1 text-[10px] font-bold rounded-md transition-all ${filterBtnClass('Resolved')}">RESOLVED</button>
+                    <!-- Stats Overview -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="${cardBg} border p-3 rounded-xl flex flex-col justify-center shadow-sm">
+                            <div class="text-[10px] text-slate-400 uppercase font-bold flex items-center gap-1 mb-1"><i data-lucide="users" class="w-3 h-3"></i> Rescuers</div>
+                            <div class="text-lg font-mono font-bold ${textColor}">12 <span class="text-[10px] font-sans text-green-400">Active</span></div>
                         </div>
-                    </nav>
-                    ${incidentList}
+                        <div class="${cardBg} border p-3 rounded-xl flex flex-col justify-center shadow-sm">
+                            <div class="text-[10px] text-slate-400 uppercase font-bold flex items-center gap-1 mb-1"><i data-lucide="tent" class="w-3 h-3"></i> Shelters</div>
+                            <div class="text-lg font-mono font-bold ${textColor}">3/4 <span class="text-[10px] font-sans text-slate-500">Open</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Incoming Feed -->
+                    <div>
+                        <nav class="flex justify-between items-center border-b ${isDark ? 'border-slate-800' : 'border-slate-200'} pb-2 mb-3">
+                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest text-balance">Incoming Feed</h3>
+                            <div class="flex ${isDark ? 'bg-slate-800/50 border-slate-700/50' : 'bg-slate-100 border-slate-200'} p-0.5 rounded-lg border">
+                                <button onclick="setGovFilter('All')" class="px-3 py-1 text-[10px] font-bold rounded-md transition-all ${filterBtnClass('All')}">ALL</button>
+                                <button onclick="setGovFilter('Active')" class="px-3 py-1 text-[10px] font-bold rounded-md transition-all ${filterBtnClass('Active')}">ACTIVE</button>
+                                <button onclick="setGovFilter('Resolved')" class="px-3 py-1 text-[10px] font-bold rounded-md transition-all ${filterBtnClass('Resolved')}">RESOLVED</button>
+                            </div>
+                        </nav>
+                        <div class="space-y-3">
+                            ${incidentList}
+                        </div>
+                    </div>
                 </div>
+                </div>`;
+            }
+
+            return `<section class="flex-1 flex flex-col p-4 ${bgClass} transition-colors duration-500 overflow-hidden">
+                ${innerHTML}
             </section>`;
         }
 
@@ -472,13 +694,13 @@
             
             let messagesHTML = state.messages.map((msg, idx) => {
                 if (msg.isSystem) {
-                    return `<div class="flex w-full justify-center animate-slide-up-fade" style="animation-delay: ${idx * 40}ms; opacity: 0;"><span class="text-xs text-slate-500 bg-slate-800/50 px-2 py-1 rounded-full">${msg.text}</span></div>`;
+                    return `<div class="flex w-full justify-center"><span class="text-xs text-slate-500 bg-slate-800/50 px-2 py-1 rounded-full">${msg.text}</span></div>`;
                 }
                 const align = msg.isMe ? 'justify-end' : 'justify-start';
                 const bubbleColor = msg.isMe ? 'bg-blue-600 text-white rounded-br-none' : `${state.powerSaving ? 'bg-slate-900 border-slate-800' : (isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-800 shadow-sm')} rounded-bl-none border`;
                 
                 return `
-                <div class="flex w-full ${align} animate-slide-up-fade" style="animation-delay: ${idx * 40}ms; opacity: 0;">
+                <div class="flex w-full ${align}">
                     <div class="max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow-md ${bubbleColor}">
                         ${!msg.isMe ? `<p class="text-xs text-slate-400 mb-1 font-bold">${msg.sender}</p>` : ''}
                         <p>${msg.text}</p>
@@ -488,7 +710,7 @@
             }).join('');
 
             return `
-            <div class="flex-1 flex flex-col w-full overflow-hidden ${bgClass} transition-colors duration-500 animate-fade-in">
+            <div class="flex-1 flex flex-col w-full overflow-hidden ${bgClass} transition-colors duration-500">
                 <div class="${bgClass} ${borderClass} p-4 shadow-sm border-b flex justify-between items-center transition-colors">
                     <div>
                         <h3 class="font-bold ${isDark ? 'text-white' : 'text-slate-900'}">${title}</h3>
@@ -517,7 +739,7 @@
             const gridColor = isDark ? '#334155' : '#cbd5e1';
             
             return `
-            <div class="flex-1 flex flex-col items-center justify-center relative overflow-hidden ${bgClass} transition-colors duration-500 animate-fade-in">
+            <div class="flex-1 flex flex-col items-center justify-center relative overflow-hidden ${bgClass} transition-colors duration-500">
                 <!-- Top Controls -->
                 <div class="absolute top-4 left-4 z-20 flex flex-col gap-2">
                     <div class="flex items-center gap-2 bg-slate-800/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-700 shadow-lg">
@@ -632,7 +854,7 @@
             const subTextColor = isDark ? 'text-slate-400' : 'text-slate-500';
             
             return `
-            <div class="flex-1 flex flex-col p-6 space-y-6 ${bgClass} transition-colors duration-500 animate-fade-in">
+            <div class="flex-1 flex flex-col p-6 space-y-6 ${bgClass} transition-colors duration-500">
                 <h2 class="text-xl font-bold ${textColor} mb-2">Settings</h2>
                 
                 <div class="p-4 rounded-xl border flex items-center justify-between ${cardBg} transition-colors">
@@ -750,6 +972,7 @@
 
         function switchTab(tab) {
             state.activeTab = tab;
+            if (tab === 'sos') state.govView = 'dashboard';
             renderScreen();
             updateNavHighlight();
         }
@@ -881,6 +1104,7 @@
 
         function exitApp() {
             state.role = null;
+            state.govView = 'dashboard'; // Reset for next login
             saveState();
             renderLanding();
         }
