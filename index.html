@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LifeNode - Disaster Communication</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-200 min-h-screen flex items-center justify-center p-4 font-sans select-none">
+
+    <!-- Phone Hardware Wrapper -->
+    <div class="relative">
+        <!-- Hardware Buttons -->
+        <div class="absolute -left-[19px] top-[110px] w-[5px] h-8 bg-slate-600 rounded-l-md border border-slate-500 border-r-0 shadow-inner z-0"></div> <!-- Silent -->
+        <div class="absolute -left-[19px] top-[160px] w-[5px] h-14 bg-slate-600 rounded-l-md border border-slate-500 border-r-0 shadow-inner z-0"></div> <!-- Vol Up -->
+        <div class="absolute -left-[19px] top-[230px] w-[5px] h-14 bg-slate-600 rounded-l-md border border-slate-500 border-r-0 shadow-inner z-0"></div> <!-- Vol Down -->
+        <div class="absolute -right-[19px] top-[180px] w-[5px] h-20 bg-slate-600 rounded-r-md border border-slate-500 border-l-0 shadow-inner z-0"></div> <!-- Power -->
+        
+        <!-- Phone Frame -->
+        <div class="relative w-[380px] h-[780px] bg-black rounded-[55px] shadow-[0_25px_60px_-10px_rgba(0,0,0,0.7)] ring-[14px] ring-slate-800 overflow-hidden flex flex-col transition-colors duration-500 z-10" id="phone-frame">
+            
+            <!-- Glare/Glass Effect -->
+            <div class="absolute top-0 right-0 w-[150%] h-[150%] bg-gradient-to-bl from-white/20 to-transparent pointer-events-none transform rotate-12 -translate-y-[20%] translate-x-[20%] z-[35] mix-blend-screen opacity-20"></div>
+
+            <!-- Screen Inner Bezel Drop Shadow -->
+            <div class="absolute inset-0 rounded-[55px] shadow-[inset_0_0_12px_rgba(0,0,0,1)] z-40 pointer-events-none border-[6px] border-black"></div>
+
+            <!-- Dynamic Island -->
+            <div class="absolute top-3 left-1/2 transform -translate-x-1/2 w-[110px] h-[32px] bg-black rounded-full z-50 flex justify-between items-center px-3 pointer-events-none shadow-[0_0_0_1px_rgba(255,255,255,0.05),_0_5px_10px_rgba(0,0,0,0.5)] transition-all duration-300">
+                <!-- IR Camera -->
+                <div class="w-3 h-3 rounded-full bg-slate-800/80 border border-slate-700/50 flex items-center justify-center relative shadow-inner">
+                    <div class="w-1.5 h-1.5 rounded-full bg-blue-900/40"></div>
+                    <div class="absolute top-[2px] right-[2px] w-[1px] h-[1px] bg-white rounded-full opacity-60"></div>
+                </div>
+                <!-- Front Camera -->
+                <div class="w-3.5 h-3.5 rounded-full bg-slate-900/80 border border-slate-800 flex items-center justify-center relative shadow-inner">
+                     <div class="w-1.5 h-1.5 rounded-full bg-green-900/30"></div>
+                     <div class="absolute top-[3px] left-[3px] w-[1.5px] h-[1.5px] bg-white rounded-full opacity-50"></div>
+                </div>
+            </div>
+
+        <!-- Medical ID Modal (Hidden by default) -->
+<div id="medical-modal" class="hidden absolute inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-fade-in" onclick="toggleMedical(false)">
+            <div class="bg-slate-900 border border-slate-700 w-full max-w-xs rounded-2xl p-6 relative shadow-2xl animate-pop-in" onclick="event.stopPropagation()">
+                <button onclick="toggleMedical(false)" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+                
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="bg-red-500/20 p-3 rounded-full text-red-500">
+                        <i data-lucide="file-heart" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-bold text-lg">Medical ID</h3>
+                        <p class="text-slate-400 text-xs">Tap fields to edit info</p>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                   <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                    <p class="text-slate-500 text-[10px] uppercase mb-1">Full Name</p>
+                    <input type="text" id="input-name" class="w-full bg-transparent text-white text-sm font-bold focus:border-b focus:border-blue-500" value="Juan Dela Cruz">
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                      <p class="text-slate-500 text-[10px] uppercase mb-1">Blood Type</p>
+                      <input type="text" id="input-blood" class="w-full bg-transparent text-white font-mono text-xl focus:border-b focus:border-blue-500" value="O+">
+                    </div>
+                    <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                      <p class="text-slate-500 text-[10px] uppercase mb-1">Age</p>
+                       <input type="number" id="input-age" class="w-full bg-transparent text-white font-mono text-xl focus:border-b focus:border-blue-500" value="24">
+                    </div>
+                  </div>
+                  <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                    <p class="text-slate-500 text-[10px] uppercase mb-1">Allergies</p>
+                     <input type="text" id="input-allergies" class="w-full bg-transparent text-white text-sm focus:border-b focus:border-blue-500" value="Penicillin, Peanuts">
+                  </div>
+                  <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                    <p class="text-slate-500 text-[10px] uppercase mb-1">Condition</p>
+                     <input type="text" id="input-condition" class="w-full bg-transparent text-white text-sm focus:border-b focus:border-blue-500" value="Asthma (Inhaler Required)">
+                  </div>
+                </div>
+
+                <button onclick="saveMedical()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold mt-6 text-sm flex justify-center items-center gap-2">
+                  <i data-lucide="check-circle-2" class="w-4 h-4"></i> Save Information
+                </button>
+            </div>
+        </div>
+
+        <!-- Government Login Modal (NEW) -->
+<div id="gov-login-modal" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-fade-in" onclick="toggleGovLogin(false)">
+            <div class="bg-slate-900 border border-slate-700 w-full max-w-xs rounded-2xl p-6 relative shadow-2xl animate-pop-in" onclick="event.stopPropagation()">
+                <button onclick="toggleGovLogin(false)" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+                
+                <div class="flex flex-col items-center mb-6">
+                    <div class="bg-green-600/20 p-4 rounded-full text-green-500 mb-3">
+                        <i data-lucide="shield-check" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-white font-bold text-lg">Government Access</h3>
+                    <p class="text-slate-400 text-xs text-center mt-1">Authorized LGU Personnel Only</p>
+                </div>
+
+                <div class="space-y-4">
+                   <div class="bg-slate-800 p-3 rounded-lg border border-slate-700" id="gov-input-container">
+                    <p class="text-slate-500 text-[10px] uppercase mb-1">Access Code / ID</p>
+                    <input type="password" id="input-gov-id" placeholder="Ex: LGU-123" class="w-full bg-transparent text-white text-sm font-bold focus:border-b focus:border-green-500 placeholder-slate-600 tracking-widest">
+                  </div>
+                </div>
+
+                <button onclick="verifyGovLogin()" class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-bold mt-6 text-sm flex justify-center items-center gap-2 transition-all">
+                  <i data-lucide="lock-keyhole" class="w-4 h-4"></i> Verify Identity
+                </button>
+                
+                <p class="text-[10px] text-slate-600 text-center mt-4">Unauthorized access is prohibited.</p>
+            </div>
+        </div>
+
+        <!-- Broadcast Modal (NEW) -->
+<div id="broadcast-modal" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-fade-in" onclick="toggleBroadcastModal(false)">
+            <div class="bg-slate-900 border border-slate-700 w-full max-w-xs rounded-2xl p-6 relative shadow-2xl animate-pop-in" onclick="event.stopPropagation()">
+                <button onclick="toggleBroadcastModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+                
+                <div class="flex flex-col items-center mb-6">
+                    <div class="bg-red-600/20 p-4 rounded-full text-red-500 mb-3">
+                        <i data-lucide="megaphone" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-white font-bold text-lg">Emergency Broadcast</h3>
+                    <p class="text-slate-400 text-xs text-center mt-1">Send alert to all residents in mesh.</p>
+                </div>
+
+                <div class="space-y-4">
+                   <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                    <p class="text-slate-500 text-[10px] uppercase mb-1">Alert Message</p>
+                    <textarea id="input-broadcast" rows="3" placeholder="Ex: Evacuate immediately..." class="w-full bg-transparent text-white text-sm font-bold focus:border-b focus:border-red-500 placeholder-slate-600 resize-none"></textarea>
+                  </div>
+                </div>
+
+                <button onclick="sendBroadcast()" class="w-full bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-bold mt-6 text-sm flex justify-center items-center gap-2 transition-all">
+                  <i data-lucide="send" class="w-4 h-4"></i> Send Alert
+                </button>
+            </div>
+        </div>
+
+        <!-- Incident Details Modal (NEW) -->
+<div id="incident-details-modal" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-fade-in" onclick="toggleIncidentModal(false)">
+            <div class="bg-slate-900 border border-slate-700 w-full max-w-xs rounded-2xl p-6 relative shadow-2xl animate-pop-in" onclick="event.stopPropagation()">
+                <button onclick="toggleIncidentModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+                
+                <div id="incident-modal-content">
+                    <!-- Dynamic Content -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Screen Content Area -->
+        <div id="main-content" class="flex-1 flex flex-col overflow-hidden text-slate-100 bg-slate-900 transition-colors duration-500">
+            <!-- Content Injected via JS -->
+        </div>
+
+        <!-- Bottom Navigation (Hidden initially for landing page) -->
+        <div id="bottom-nav" class="hidden bg-slate-950/90 backdrop-blur border-t border-slate-800 px-6 py-4 flex justify-between items-center pb-8 transition-colors duration-500 z-30">
+             <button onclick="switchTab('chat')" id="btn-chat" class="flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300 transition-all active:scale-90">
+               <i data-lucide="message-square" class="w-5 h-5"></i>
+               <span class="text-[9px] font-bold">CHAT</span>
+             </button>
+             
+             <button onclick="switchTab('map')" id="btn-map" class="flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300 transition-all active:scale-90">
+               <i data-lucide="navigation" class="w-5 h-5"></i>
+               <span class="text-[9px] font-bold">MAP</span>
+             </button>
+
+             <!-- Center Tab (Dynamic Icon) -->
+             <div class="relative -top-6">
+                <button onclick="switchTab('sos')" id="btn-sos" class="w-14 h-14 rounded-full flex items-center justify-center shadow-lg border-4 border-slate-900 bg-slate-700 text-slate-400 hover:bg-slate-600 transition-transform">
+                  <i data-lucide="shield-alert" id="icon-center" class="w-7 h-7"></i>
+                </button>
+             </div>
+
+             <button onclick="switchTab('settings')" id="btn-settings" class="flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300 transition-all active:scale-90">
+               <i data-lucide="settings" class="w-5 h-5"></i>
+               <span class="text-[9px] font-bold">CONFIG</span>
+             </button>
+
+             <button onclick="handleRightNav()" id="btn-right" class="flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300 transition-all active:scale-90">
+               <i data-lucide="user" id="icon-right" class="w-5 h-5"></i>
+               <span class="text-[9px] font-bold" id="text-right">ID</span>
+             </button>
+        </div>
+
+        <!-- Home Bar Indicator -->
+        <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-white/20 rounded-full z-20 pointer-events-none"></div>
+
+    </div>
+
+    </div>
+
+    <!-- Footer Label -->
+    <div class="absolute bottom-4 right-4 text-slate-500 text-xs font-mono tracking-widest uppercase opacity-60">
+        LifeNode v1.5 • High Fidelity UI
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
