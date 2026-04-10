@@ -201,9 +201,7 @@
 
         function handleRightNav() {
             if (state.role === 'government') {
-                state.role = null;
-                saveState();
-                renderLanding();
+                exitApp();
             } else {
                 toggleMedical(true);
             }
@@ -702,6 +700,10 @@
                         <span class="text-green-400 font-mono">915 MHz</span>
                     </div>
                 </div>
+
+                <button onclick="exitApp()" class="w-full mt-4 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition-all active:scale-95">
+                    <i data-lucide="log-out" class="w-4 h-4"></i> Exit to Start Screen
+                </button>
             </div>`;
         }
 
@@ -875,6 +877,12 @@
             state.darkMode = !state.darkMode;
             saveState();
             renderScreen();
+        }
+
+        function exitApp() {
+            state.role = null;
+            saveState();
+            renderLanding();
         }
 
         function sendChat() {
